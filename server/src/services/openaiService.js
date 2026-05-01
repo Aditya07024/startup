@@ -1,7 +1,9 @@
 import OpenAI from "openai";
 import { env } from "../config/env.js";
 
-const AI_PROMPT_TEMPLATE = (topic) => `Create social media content for the topic "${topic}".
+const AI_PROMPT_TEMPLATE = (
+  topic,
+) => `Create social media content for the topic "${topic}".
 Return valid JSON only with keys hook, caption, hashtags.
 hashtags must be an array of exactly 10 hashtags.`;
 
@@ -14,7 +16,10 @@ const isConfiguredKey = (apiKey) => {
   return !normalized.startsWith("your_") && normalized !== "change_me";
 };
 
-const buildFallbackResponse = (topic, reason = "Configure GEMINI_API_KEY or OPENAI_API_KEY for real output.") => ({
+const buildFallbackResponse = (
+  topic,
+  reason = "Configure GEMINI_API_KEY or OPENAI_API_KEY for real output.",
+) => ({
   hook: `Stop scrolling: ${topic} starts here.`,
   caption: `Create stronger momentum around ${topic} with a simple, audience-first message. ${reason}`,
   hashtags: [
@@ -76,10 +81,7 @@ const extractField = (text, key) => {
   }
 
   if (key !== "hashtags") {
-    return match[1]
-      .replace(/\\"/g, '"')
-      .replace(/\\n/g, " ")
-      .trim();
+    return match[1].replace(/\\"/g, '"').replace(/\\n/g, " ").trim();
   }
 
   return match[1]
@@ -89,7 +91,10 @@ const extractField = (text, key) => {
 };
 
 const parseJsonFromText = (text) => {
-  const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const trimmed = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
   const jsonBlock = trimmed.match(/\{[\s\S]*\}/);
   const candidate = jsonBlock ? jsonBlock[0] : trimmed;
 
@@ -113,7 +118,10 @@ const parseJsonFromText = (text) => {
 
 const generateWithGemini = async (topic) => {
   if (!isConfiguredKey(env.geminiApiKey)) {
-    return buildFallbackResponse(topic, "Configure GEMINI_API_KEY for real output.");
+    return buildFallbackResponse(
+      topic,
+      "Configure GEMINI_API_KEY for real output.",
+    );
   }
 
   const response = await fetch(
@@ -139,7 +147,7 @@ const generateWithGemini = async (topic) => {
           responseMimeType: "application/json",
         },
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -162,7 +170,10 @@ const generateWithGemini = async (topic) => {
 
 const generateWithHuggingFace = async (topic) => {
   if (!isConfiguredKey(env.huggingFaceApiKey)) {
-    return buildFallbackResponse(topic, "Configure HUGGINGFACE_API_KEY for real output.");
+    return buildFallbackResponse(
+      topic,
+      "Configure HUGGINGFACE_API_KEY for real output.",
+    );
   }
 
   try {
@@ -192,12 +203,14 @@ const generateWithHuggingFace = async (topic) => {
           max_tokens: 300,
           temperature: 0.8,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      const error = new Error(`Hugging Face request failed: ${response.status}`);
+      const error = new Error(
+        `Hugging Face request failed: ${response.status}`,
+      );
       error.status = response.status;
       error.details = errorText;
       throw error;
@@ -219,7 +232,10 @@ const generateWithHuggingFace = async (topic) => {
 
 const generateWithOpenAi = async (topic) => {
   if (!openAiClient) {
-    return buildFallbackResponse(topic, "Configure OPENAI_API_KEY for real output.");
+    return buildFallbackResponse(
+      topic,
+      "Configure OPENAI_API_KEY for real output.",
+    );
   }
 
   try {
@@ -231,7 +247,10 @@ const generateWithOpenAi = async (topic) => {
     return parseJsonFromText(response.output_text || "");
   } catch (error) {
     if (error?.status === 401 || error?.code === "invalid_api_key") {
-      return buildFallbackResponse(topic, "The configured OpenAI key is invalid.");
+      return buildFallbackResponse(
+        topic,
+        "The configured OpenAI key is invalid.",
+      );
     }
 
     throw error;
@@ -251,7 +270,10 @@ export const generateSocialContent = async (topic) => {
     return await generateWithGemini(topic);
   } catch (error) {
     if ([400, 401, 403, 429].includes(error?.status)) {
-      return buildFallbackResponse(topic, "The configured AI provider is unavailable or rate-limited.");
+      return buildFallbackResponse(
+        topic,
+        "The configured AI provider is unavailable or rate-limited.",
+      );
     }
 
     throw error;
