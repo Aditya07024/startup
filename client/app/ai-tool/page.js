@@ -3,8 +3,17 @@
 import { useState } from "react";
 import { apiRequest } from "../../lib/api";
 
+const CONTENT_TYPES = [
+  { value: "creative", label: "Creative - Imaginative & engaging" },
+  { value: "descriptive", label: "Descriptive - Detailed & informative" },
+  { value: "professional", label: "Professional - Formal & authoritative" },
+  { value: "funny", label: "Funny - Entertaining & witty" },
+  { value: "inspirational", label: "Inspirational - Uplifting & motivational" },
+];
+
 export default function AiToolPage() {
   const [topic, setTopic] = useState("");
+  const [contentType, setContentType] = useState("creative");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +26,7 @@ export default function AiToolPage() {
     try {
       const data = await apiRequest("/ai/generate", {
         method: "POST",
-        body: JSON.stringify({ topic }),
+        body: JSON.stringify({ topic, contentType }),
       });
       setResult(data);
     } catch (err) {
@@ -34,9 +43,27 @@ export default function AiToolPage() {
         <div className="card surface hero-panel">
           <div className="badge">Premium AI Tool</div>
           <h1 className="section-title" style={{ fontSize: "clamp(34px, 5vw, 58px)" }}>AI Content Generator</h1>
-          <p className="section-copy">Enter a topic and generate one hook, one caption, and 10 hashtags.</p>
+          <p className="section-copy">Enter a topic and select a style to generate one hook, one caption, and 10 hashtags.</p>
           <form onSubmit={handleGenerate} className="grid" style={{ marginTop: 20 }}>
-            <input className="input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Motivational fitness reel" />
+            <input 
+              className="input" 
+              value={topic} 
+              onChange={(e) => setTopic(e.target.value)} 
+              placeholder="Motivational fitness reel" 
+              required
+            />
+            <select 
+              className="input"
+              value={contentType}
+              onChange={(e) => setContentType(e.target.value)}
+              style={{ padding: "10px 12px" }}
+            >
+              {CONTENT_TYPES.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
             <button className="btn" type="submit" disabled={loading}>{loading ? "Generating..." : "Generate Content"}</button>
             {error ? (
               <div className="card" style={{ padding: 18, borderColor: "rgba(177,93,100,0.28)" }}>

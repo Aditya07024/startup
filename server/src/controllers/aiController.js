@@ -1,14 +1,22 @@
 import { generateSocialContent } from "../services/openaiService.js";
 
+const VALID_CONTENT_TYPES = ["creative", "descriptive", "professional", "funny", "inspirational"];
+
 export const generateAiContent = async (req, res) => {
   try {
-    const { topic } = req.body;
+    const { topic, contentType = "creative" } = req.body;
 
     if (!topic) {
       return res.status(400).json({ message: "Topic is required" });
     }
 
-    const result = await generateSocialContent(topic);
+    if (!VALID_CONTENT_TYPES.includes(contentType)) {
+      return res.status(400).json({ 
+        message: `Invalid content type. Must be one of: ${VALID_CONTENT_TYPES.join(", ")}` 
+      });
+    }
+
+    const result = await generateSocialContent(topic, contentType);
     return res.json(result);
   } catch (error) {
     console.error("AI generation failed:", error.message);

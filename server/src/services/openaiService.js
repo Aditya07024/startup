@@ -1,11 +1,21 @@
 import OpenAI from "openai";
 import { env } from "../config/env.js";
 
-const AI_PROMPT_TEMPLATE = (
-  topic,
-) => `Create social media content for the topic "${topic}".
+const CONTENT_TYPE_GUIDELINES = {
+  creative: "Make it imaginative, engaging, and think outside the box with unique angles.",
+  descriptive: "Be detailed and informative, clearly explaining the topic with rich details.",
+  professional: "Keep it formal, business-appropriate, and authoritative tone.",
+  funny: "Add humor, wit, and make it entertaining and shareable for laughs.",
+  inspirational: "Make it uplifting, motivational, and emotionally resonant.",
+};
+
+const AI_PROMPT_TEMPLATE = (topic, contentType = "creative") => {
+  const guideline = CONTENT_TYPE_GUIDELINES[contentType] || CONTENT_TYPE_GUIDELINES.creative;
+  return `Create social media content for the topic "${topic}".
+Style: ${guideline}
 Return valid JSON only with keys hook, caption, hashtags.
 hashtags must be an array of exactly 10 hashtags.`;
+};
 
 const isConfiguredKey = (apiKey) => {
   if (!apiKey) {
@@ -116,7 +126,7 @@ const parseJsonFromText = (text) => {
   }
 };
 
-const generateWithGemini = async (topic) => {
+const generateWithGemini = async (topic, contentType = "creative") => {
   if (!isConfiguredKey(env.geminiApiKey)) {
     return buildFallbackResponse(
       topic,
@@ -137,7 +147,7 @@ const generateWithGemini = async (topic) => {
           {
             parts: [
               {
-                text: AI_PROMPT_TEMPLATE(topic),
+                text: AI_PROMPT_TEMPLATE(topic, contentType),
               },
             ],
           },
@@ -168,7 +178,7 @@ const generateWithGemini = async (topic) => {
   return parseJsonFromText(text);
 };
 
-const generateWithHuggingFace = async (topic) => {
+const generateWithHuggingFace = async (topic, contentType = "creative") => {
   if (!isConfiguredKey(env.huggingFaceApiKey)) {
     return buildFallbackResponse(
       topic,
@@ -194,7 +204,7 @@ const generateWithHuggingFace = async (topic) => {
             },
             {
               role: "user",
-              content: AI_PROMPT_TEMPLATE(topic),
+              content: AI_PROMPT_TEMPLATE(topic, contentType),
             },
           ],
           response_format: {
@@ -257,17 +267,17 @@ const generateWithOpenAi = async (topic) => {
   }
 };
 
-export const generateSocialContent = async (topic) => {
+export const generateSocialContent = async (topic, contentType = "creative") => {
   try {
     if (env.aiProvider === "huggingface") {
-      return await generateWithHuggingFace(topic);
+      return await generateWithHuggingFace(topic, contentType);
     }
 
     if (env.aiProvider === "openai") {
-      return await generateWithOpenAi(topic);
+      return await generateWithOpenAi(topic, contentType);
     }
 
-    return await generateWithGemini(topic);
+    return await generateWithGemini(topic, contentType);
   } catch (error) {
     if ([400, 401, 403, 429].includes(error?.status)) {
       return buildFallbackResponse(
